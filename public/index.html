@@ -30,15 +30,17 @@
     <script>
       var es = new EventSource("/sse");
       es.onmessage = function (event) {
-        const data = JSON.parse(event.data.replaceAll("\\", ""));
-        const { pay_type, time, text } = data;
-        if (pay_type === "wxpay") {
+        try {
+          const data = JSON.parse(event.data.replaceAll("\\", ""));
+          const { pay_type, msg_time, text, app_name } = data;
           const money = text.match(/收款(.*)元/)[1];
-          alert(`微信收款【${money}】元`);
-        } else if (pay_type === "alipay") {
-          const money = text.match(/收款(.*)元/)[1];
-          alert(`支付宝收款【${money}】元`);
-        }
+          if (["wxpay", "alipay"].includes(pay_type)) {
+            alert(`收款时间：${msg_time}\n
+            收款App：${app_name}\n
+            收款类型：${pay_type}\n
+            收款金额：${money}\n`);
+          } 
+        } catch (error) {}
         console.log(data);
       };
     </script>
