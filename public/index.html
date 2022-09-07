@@ -35,11 +35,10 @@
           const { pay_type, msg_time, text, app_name } = data;
           const money = text.match(/收款(.*)元/)[1];
           if (["wxpay", "alipay"].includes(pay_type)) {
-            alert(`收款时间：${msg_time}\n
-            收款App：${app_name}\n
-            收款类型：${pay_type}\n
-            收款金额：${money}\n`);
-          } 
+            alert(
+              `收款时间：${msg_time}\n收款App：${app_name}\n收款类型：${pay_type}\n收款金额：${money}`
+            );
+          }
         } catch (error) {}
         console.log(data);
       };
