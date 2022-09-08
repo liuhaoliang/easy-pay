@@ -8,7 +8,7 @@ const send = (text)=>{
 const app = express();
 
 const path = require("path");
-const port = 6001;
+const port = 3030;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: false }));
