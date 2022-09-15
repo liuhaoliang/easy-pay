@@ -37,7 +37,7 @@
         try {
           const data = JSON.parse(event.data.replaceAll("\\", ""));
           const { pay_type, msg_time, text, app_name } = data;
-          const money = text.match(/收款(.*)元/)[1];
+          const money = text.match(/收款(\d{1,}.\d{1,})元/)[1];
           if (["wxpay", "alipay"].includes(pay_type)) {
             alert(
               `收款时间：${msg_time}\n收款App：${app_name}\n收款类型：${pay_type}\n收款金额：${money}`
