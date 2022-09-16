@@ -19,8 +19,8 @@ npm install
 npm run start
 ```
 
-前台支付页面地址 [http://localhost:3030](http://ip:3030)
-支付回调地址 http://localhost:3030/pay
+### 前台支付页面地址 [http://localhost:3030](http://ip:3030)
+### 支付回调地址 http://localhost:3030/pay
 
 
 ## App端配置：
