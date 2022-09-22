@@ -4,19 +4,18 @@ const CryptoJS = require("crypto-js");
 
 // 存储客户端连接
 const sseClients = new Set();
-// 发送sse消息
-const send = (text) => {
+
+// 定时删除无效客户端
+setInterval(() => {
   const clients = [...sseClients];
   for (const client of clients) {
     if (client.socket.destroyed) {
       // 根据socket状态，删除无效客户端
       sseClients.delete(client);
-    } else {
-      // 模拟sse发送格式
-      client.write("data: " + text + "\n\n");
     }
   }
-};
+}, 1000);
+
 const port = 3030;
 const discountUnit = 0.01; //折扣金额梯度
 const salt = "zcwisg"; //用于加密的盐
@@ -28,7 +27,27 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/pay", (req, res) => {
-  send(req.query.extra);
+  try {
+    const data = JSON.parse(req.query.extra.replaceAll("\\", ""));
+    const { pay_type, msg_time, text, app_name } = data;
+    const money = text.match(/收款(\d{1,}.\d{1,})元/)[1];
+    if (["wxpay", "alipay"].includes(pay_type)) {
+      const client = [...sseClients].find((o) => {
+        const { total, discount } = o.query;
+        return Number(money) === Number(total) - Number(discount);
+      });
+      if (client) {
+        const text = JSON.stringify({
+          ...client.query,
+          pay_type,
+          pay_time: msg_time,
+        });
+        client.write("data: " + text + "\n\n");
+      }
+    }
+  } catch (error) {
+    console.log("支付信息解析失败", error);
+  }
   res.send("ok");
 });
 
@@ -89,8 +108,6 @@ app.post("/prepare-pay", (req, res) => {
 });
 
 app.get("/in-pay", (req, res) => {
-  // 将连接参数存储下来
-  const { account, total, discount, sign } = req.query;
   // 校验支付信息是否正确
   if (!checkPaySign(req.query)) {
     res.json({
@@ -99,12 +116,15 @@ app.get("/in-pay", (req, res) => {
     });
     return;
   }
-  sseClients.add(res);
   res.header({
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
     Connection: "keep-alive",
   });
+  // 将连接参数存储下来
+  res.query = req.query;
+  // 添加新的连接
+  sseClients.add(res);
 });
 
 app.listen(port, () => {
