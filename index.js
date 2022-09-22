@@ -26,31 +26,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
 
-app.get("/pay", (req, res) => {
-  try {
-    const data = JSON.parse(req.query.extra.replace(/\\/g, ""));
-    const { pay_type, msg_time, text, app_name } = data;
-    const money = text.match(/收款(\d{1,}.\d{1,})元/)[1];
-    if (["wxpay", "alipay"].includes(pay_type)) {
-      const client = [...sseClients].find((o) => {
-        const { total, discount } = o.query;
-        return Number(money) === Number(total) - Number(discount);
-      });
-      if (client) {
-        const text = JSON.stringify({
-          ...client.query,
-          pay_type,
-          pay_time: msg_time,
-        });
-        client.write("data: " + text + "\n\n");
-      }
-    }
-  } catch (error) {
-    console.log("支付信息解析失败", error);
-  }
-  res.send("ok");
-});
-
 // 获取当前用户的折扣信息
 const getPayInfo = ({ account, total }) => {
   let discount = 0;
@@ -82,6 +57,34 @@ const getPaySign = ({ account, discount, total }) => {
 const checkPaySign = ({ account, discount, total, sign }) => {
   return getPaySign({ account, discount, total }) === sign;
 };
+
+/**
+ * 对接app的回调接口
+ */
+app.get("/pay", (req, res) => {
+  try {
+    const data = JSON.parse(req.query.extra.replace(/\\/g, ""));
+    const { pay_type, msg_time, text, app_name } = data;
+    const money = text.match(/收款(\d{1,}.\d{1,})元/)[1];
+    if (["wxpay", "alipay"].includes(pay_type)) {
+      const client = [...sseClients].find((o) => {
+        const { total, discount } = o.query;
+        return Number(money) === Number(total) - Number(discount);
+      });
+      if (client) {
+        const text = JSON.stringify({
+          ...client.query,
+          pay_type,
+          pay_time: msg_time,
+        });
+        client.write("data: " + text + "\n\n");
+      }
+    }
+  } catch (error) {
+    console.log("支付信息解析失败", error);
+  }
+  res.send("ok");
+});
 
 /**
  * 预支付，根据用户和金额，判断需要折扣的金额
@@ -116,6 +119,9 @@ app.post("/prepare-pay", (req, res) => {
   });
 });
 
+/**
+ * 支付页面的消息推送接口
+ */
 app.get("/in-pay", (req, res) => {
   // 校验支付信息是否正确
   if (!checkPaySign(req.query)) {
