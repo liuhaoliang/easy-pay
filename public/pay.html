@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>双卡助手-支付测试</title>
+    <style>
+      .wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .images {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-around;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <h2>支付剩余时间：<span id="time"></span>秒</h2>
+
+      <div class="images">
+        <img width="200px" src="./assets/alipay.jpg" />
+        <img width="200px" style="margin: 20px 0" src="./assets/wxpay.jpg" />
+      </div>
+    </div>
+    <script>
+      const es = new EventSource(`/in-pay${location.search}`);
+      es.onmessage = function (event) {
+        try {
+          const data = JSON.parse(event.data.replaceAll("\\", ""));
+          const { pay_type, msg_time, text, app_name } = data;
+          const money = text.match(/收款(\d{1,}.\d{1,})元/)[1];
+          if (["wxpay", "alipay"].includes(pay_type)) {
+            alert(
+              `收款时间：${msg_time}\n收款App：${app_name}\n收款类型：${pay_type}\n收款金额：${money}`
+            );
+          }
+        } catch (error) {
+          console.log("++++", error);
+        }
+      };
+      es.onerror = function (error) {
+        alert("支付信息有误，请重试");
+        location.href = "/";
+      };
+      let time = 60;
+      const timeElem = document.getElementById("time");
+      timeElem.innerText = time;
+      const timer = setInterval(() => {
+        time--;
+        document.getElementById("time").innerText = time;
+        if (time <= 0) {
+          clearInterval(timer);
+          alert("支付超时");
+          location.href = "/";
+        }
+      }, 1000);
+    </script>
+  </body>
+</html>

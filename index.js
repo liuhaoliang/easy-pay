@@ -1,5 +1,7 @@
 const path = require("path");
 const express = require("express");
+const CryptoJS = require("crypto-js");
+
 // 存储客户端连接
 const sseClients = new Set();
 // 发送sse消息
@@ -15,17 +17,88 @@ const send = (text) => {
     }
   }
 };
-const app = express();
 const port = 3030;
+const discountUnit = 0.01; //折扣金额梯度
+const salt = "zcwisg"; //用于加密的盐
+
+const app = express();
+
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: false }));
+app.use(express.static(path.join(__dirname, "public")));
+
 app.get("/pay", (req, res) => {
   send(req.query.extra);
   res.send("ok");
 });
 
-app.get("/sse", (req, res) => {
+// 获取当前用户的折扣信息
+const getDiscount = ({ account, total }) => {
+  // 当前用户进行中的支付
+  const currentUserPays = [...sseClients].filter((o) => o.account === account);
+  const finded = currentUserPays.find((o) => {
+    return o.total === total;
+  });
+  let discount = 0;
+  if (finded) {
+    const discountList = currentUserPays;
+    discount = discountUnit;
+    while (discountList.includes(discount)) {
+      discount += discountUnit;
+    }
+  }
+  return {
+    account,
+    total,
+    discount,
+    sign: getPaySign({ account, total, discount }),
+  };
+};
+
+const getPaySign = ({ account, discount, total }) => {
+  return CryptoJS.MD5(account + discount + total + salt).toString();
+};
+
+const checkPaySign = ({ account, discount, total, sign }) => {
+  return getPaySign({ account, discount, total }) === sign;
+};
+
+/**
+ * 预支付，根据用户和金额，判断需要折扣的金额
+ */
+app.post("/prepare-pay", (req, res) => {
+  const { account, total } = req.body;
+  if (!account || !total) {
+    res.json({
+      status: false,
+      msg: "请完善表单",
+    });
+    return;
+  }
+  if (isNaN(total) || Number(total) === 0) {
+    res.json({
+      status: false,
+      msg: "请输入支付金额",
+    });
+    return;
+  }
+  res.json({
+    status: true,
+    data: getDiscount({ account, total }),
+  });
+});
+
+app.get("/in-pay", (req, res) => {
+  // 将连接参数存储下来
+  const { account, total, discount, sign } = req.query;
+  // 校验支付信息是否正确
+  if (!checkPaySign(req.query)) {
+    res.json({
+      status: true,
+      data: "ok",
+    });
+    return;
+  }
   sseClients.add(res);
   res.header({
     "Content-Type": "text/event-stream",
