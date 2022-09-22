@@ -53,18 +53,9 @@ app.get("/pay", (req, res) => {
 
 // 获取当前用户的折扣信息
 const getDiscount = ({ account, total }) => {
-  // 当前用户进行中的支付
-  const currentUserPays = [...sseClients].filter((o) => o.account === account);
-  const finded = currentUserPays.find((o) => {
-    return o.total === total;
-  });
   let discount = 0;
-  if (finded) {
-    const discountList = currentUserPays;
-    discount = discountUnit;
-    while (discountList.includes(discount)) {
-      discount += discountUnit;
-    }
+  while ([...sseClients].find((o) => Number(o.total)- Number(o.discount)=== Number(total)- Number(discount))) {
+    discount += discountUnit;
   }
   return {
     account,
