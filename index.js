@@ -14,7 +14,7 @@ setInterval(() => {
       sseClients.delete(client);
     }
   }
-}, 1000);
+}, 200);
 
 const port = 3030;
 const discountUnit = 0.01; //折扣金额梯度
