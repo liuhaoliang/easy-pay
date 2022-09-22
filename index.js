@@ -28,11 +28,11 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/pay", (req, res) => {
   try {
-    const data = JSON.parse(req.query.extra.replaceAll("\\", ""));
+    const data = JSON.parse(req.query.extra.replace(/\\/g,""));
     const { pay_type, msg_time, text, app_name } = data;
     const money = text.match(/收款(\d{1,}.\d{1,})元/)[1];
     if (["wxpay", "alipay"].includes(pay_type)) {
-      const client = [...sseClients].find((o) => {
+    const client = [...sseClients].find((o) => {
         const { total, discount } = o.query;
         return Number(money) === Number(total) - Number(discount);
       });

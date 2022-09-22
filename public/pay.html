@@ -40,23 +40,7 @@
         Number(search.get("total")) - Number(search.get("discount"));
       document.getElementById("real-pay").innerText = realPay;
 
-      const es = new EventSource(`/in-pay${location.search}`);
-      es.onmessage = function (event) {
-        try {
-          const { pay_type, pay_time, total, discount, account } = JSON.parse(
-            event.data
-          );
-          alert(
-            `付款款时间：${pay_time}\n
-            付款方式：${pay_type}\n
-            付款金额${total}\n
-            实收金额：${Number(total) - Numner(discount)}`
-          );
-        } catch (error) {}
-      };
-      es.onerror = function (error) {
-        location.href = "/";
-      };
+      // 设置倒计时
       let time = 60;
       const timeElem = document.getElementById("time");
       timeElem.innerText = time;
@@ -69,6 +53,24 @@
           location.href = "/";
         }
       }, 1000);
+
+      const es = new EventSource(`/in-pay${location.search}`);
+      es.onmessage = function (event) {
+        try {
+          const { pay_type, pay_time, total, discount, account } = JSON.parse(
+            event.data
+          );
+          alert(
+            `付款用户：${account}\n付款时间：${pay_time}\n付款方式：${pay_type}\n付款金额：${total}\n实收金额：${
+              Number(total) - Number(discount)
+            }`
+          );
+          location.href = "/";
+        } catch (error) {}
+      };
+      es.onerror = function (error) {
+        location.href = "/";
+      };
     </script>
   </body>
 </html>
