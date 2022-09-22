@@ -28,11 +28,11 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/pay", (req, res) => {
   try {
-    const data = JSON.parse(req.query.extra.replace(/\\/g,""));
+    const data = JSON.parse(req.query.extra.replace(/\\/g, ""));
     const { pay_type, msg_time, text, app_name } = data;
     const money = text.match(/收款(\d{1,}.\d{1,})元/)[1];
     if (["wxpay", "alipay"].includes(pay_type)) {
-    const client = [...sseClients].find((o) => {
+      const client = [...sseClients].find((o) => {
         const { total, discount } = o.query;
         return Number(money) === Number(total) - Number(discount);
       });
@@ -52,7 +52,7 @@ app.get("/pay", (req, res) => {
 });
 
 // 获取当前用户的折扣信息
-const getDiscount = ({ account, total }) => {
+const getPayInfo = ({ account, total }) => {
   let discount = 0;
   while (
     [...sseClients].find(
@@ -62,6 +62,10 @@ const getDiscount = ({ account, total }) => {
     )
   ) {
     discount += discountUnit;
+  }
+  // 折扣后金额不能为0
+  if (Number(total) === Number(discount)) {
+    return null;
   }
   return {
     account,
@@ -98,9 +102,17 @@ app.post("/prepare-pay", (req, res) => {
     });
     return;
   }
+  const payInfo = getPayInfo({ account, total });
+  if (!payInfo) {
+    res.json({
+      status: false,
+      msg: "请稍后再试",
+    });
+    return;
+  }
   res.json({
     status: true,
-    data: getDiscount({ account, total }),
+    data: payInfo,
   });
 });
 
