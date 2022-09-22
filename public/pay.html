@@ -21,7 +21,12 @@
   </head>
   <body>
     <div class="wrapper">
-      <h2>支付剩余时间：<span id="time"></span>秒</h2>
+      <h2>
+        请扫码支付&nbsp
+        <span style="color: red" id="real-pay"></span>
+        &nbsp元，剩余时间：
+        <span id="time"></span>秒
+      </h2>
 
       <div class="images">
         <img width="200px" src="./assets/alipay.jpg" />
@@ -29,6 +34,12 @@
       </div>
     </div>
     <script>
+      // 设置显示的实际支付金额
+      const search = new URLSearchParams(location.search);
+      const realPay =
+        Number(search.get("total")) - Number(search.get("discount"));
+      document.getElementById("real-pay").innerText = realPay;
+
       const es = new EventSource(`/in-pay${location.search}`);
       es.onmessage = function (event) {
         try {
@@ -44,7 +55,6 @@
         } catch (error) {}
       };
       es.onerror = function (error) {
-        alert("支付信息有误，请重试");
         location.href = "/";
       };
       let time = 60;

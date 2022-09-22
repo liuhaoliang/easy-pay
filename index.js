@@ -54,7 +54,13 @@ app.get("/pay", (req, res) => {
 // 获取当前用户的折扣信息
 const getDiscount = ({ account, total }) => {
   let discount = 0;
-  while ([...sseClients].find((o) => Number(o.total)- Number(o.discount)=== Number(total)- Number(discount))) {
+  while (
+    [...sseClients].find(
+      (o) =>
+        Number(o.query.total) - Number(o.query.discount) ===
+        Number(total) - Number(discount)
+    )
+  ) {
     discount += discountUnit;
   }
   return {
@@ -102,8 +108,22 @@ app.get("/in-pay", (req, res) => {
   // 校验支付信息是否正确
   if (!checkPaySign(req.query)) {
     res.json({
-      status: true,
-      data: "ok",
+      status: false,
+      msg: "无效的支付",
+    });
+    return;
+  }
+  // 防止有重复金额的客户端连接
+  if (
+    [...sseClients].find(
+      (o) =>
+        Number(o.query.total) - Number(o.query.discount) ===
+        Number(req.query.total) - Number(req.query.discount)
+    )
+  ) {
+    res.json({
+      status: false,
+      msg: "请先调用预支付接口",
     });
     return;
   }
