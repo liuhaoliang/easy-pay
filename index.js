@@ -57,19 +57,19 @@ const getPayInfo = ({ account, total }) => {
         o => o === (Number(total) - Number(discount)).toFixed(2)
       )
     ) {
-      discount = (discount + DiscountUnit).toFixed(2);
+      discount = (Number(discount) + DiscountUnit).toFixed(2);
     }
   } else {
     // 随机折扣模式
     const priceCount = ((MaxDiscount / DiscountUnit) | 0) + 1;
-    const availablePrices = Array(priceCount)
+    const availablePrices = Array(priceCount).fill("")
       .map((o, idx) => (total - idx * DiscountUnit).toFixed(2))
-      .filter(o => historyRealPay.includes(o));
+      .filter(o => !historyRealPay.includes(o));
     if (availablePrices.length > 0) {
       const idx = (Math.random() * availablePrices.length) | 0;
       discount = (total - availablePrices[idx]).toFixed(2);
     } else {
-      discount === total;
+      discount = total;
     }
   }
 
