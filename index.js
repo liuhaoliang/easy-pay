@@ -73,8 +73,10 @@ app.get("/pay-hook", (req, res) => {
     const { pay_type: payType, msg_time: payTime, text, app_name } = data;
     const money = text.match(/收款(\d{1,}.\d{1,})元/)[1];
     if (["wxpay", "alipay"].includes(payType)) {
+      const { returnUrl = ReturnUrl, ...rest } = client.query;
       const callbackData = {
-        ...client.query,
+        ...rest,
+        returnUrl,
         payType,
         payTime,
       };

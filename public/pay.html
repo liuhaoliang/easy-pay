@@ -57,15 +57,14 @@
       const es = new EventSource(`/in-pay${location.search}`);
       es.onmessage = function (event) {
         try {
-          const { payType, payTime, total, discount, account } = JSON.parse(
-            event.data
-          );
+          const { payType, payTime, total, discount, account, returnUrl } =
+            JSON.parse(event.data);
           alert(
             `付款用户：${account}\n付款时间：${payTime}\n付款方式：${payType}\n付款金额：${total}\n实收金额：${
               Number(total) - Number(discount)
             }`
           );
-          location.href = "/";
+          location.href = returnUrl || "/";
         } catch (error) {}
       };
       es.onerror = function (error) {
