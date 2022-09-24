@@ -44,15 +44,6 @@
       let time = 60;
       const timeElem = document.getElementById("time");
       timeElem.innerText = time;
-      const timer = setInterval(() => {
-        time--;
-        document.getElementById("time").innerText = time;
-        if (time <= 0) {
-          clearInterval(timer);
-          alert("支付超时");
-          location.href = "/";
-        }
-      }, 1000);
 
       const es = new EventSource(`/in-pay${location.search}`);
       es.onmessage = function (event) {
@@ -68,8 +59,23 @@
         } catch (error) {}
       };
       es.onerror = function (error) {
+        es.close();
         location.href = "/";
       };
+
+      const timer = setInterval(() => {
+        time--;
+        document.getElementById("time").innerText = time;
+        if (time <= 0) {
+          clearInterval(timer);
+          es.close();
+          // 延时1s保证优先断开连接;
+          setTimeout(() => {
+            alert("支付超时");
+            location.href = "/";
+          }, 1000);
+        }
+      }, 1000);
     </script>
   </body>
 </html>
