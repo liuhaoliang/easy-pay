@@ -3,46 +3,53 @@ const express = require("express");
 const CryptoJS = require("crypto-js");
 const { default: axios } = require("axios");
 
+// 程序端口
+const port = 3030;
+
 // 支付通知地址
 const NotifyUrl = "";
 // 支付返回地址，如果预支付没有传，就使用这个默认地址
 const ReturnUrl = "";
-
+// 折扣金额梯度
+const DiscountUnit = 0.01;
+// 最大折扣金额
+const MaxDiscount = 0.2;
+// 使用随机折扣模式/使用梯度折扣模式
+const RandomDiscountMode = false;
+// 用于加密的盐
+const Salt = "zcwisg";
 // 存储客户端连接
-const sseClients = new Set();
-
-// 定时删除无效客户端
-setInterval(() => {
-  const clients = [...sseClients];
-  for (const client of clients) {
-    if (client.socket.destroyed) {
-      // 根据socket状态，删除无效客户端
-      sseClients.delete(client);
-    }
-  }
-}, 200);
-
-const port = 3030;
-const discountUnit = 0.01; //折扣金额梯度
-const salt = "zcwisg"; //用于加密的盐
-
+const clientSet = new Set();
 const app = express();
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
+
+const getClients = () => [...clientSet];
+
+const getPaySign = ({ account, discount, total }) => CryptoJS.MD5(account + discount + total + Salt).toString();
+
+// 定时删除无效客户端
+setInterval(() => {
+  const clients = getClients();
+  clients.forEach((o) => {
+    if (o.socket.destroyed) {
+      // 根据socket状态，删除无效客户端
+      clientSet.delete(o);
+    }
+  });
+}, 200);
 
 // 获取当前用户的折扣信息
 const getPayInfo = ({ account, total }) => {
   let discount = 0;
   while (
-    [...sseClients].find(
-      (o) =>
-        Number(o.query.total) - Number(o.query.discount) ===
-        Number(total) - Number(discount)
+    getClients().find(
+      o => Number(o.query.total) - Number(o.query.discount)
+        === Number(total) - Number(discount)
     )
   ) {
-    discount += discountUnit;
+    discount += DiscountUnit;
   }
   // 折扣后金额不能为0
   if (Number(total) === Number(discount)) {
@@ -56,13 +63,7 @@ const getPayInfo = ({ account, total }) => {
   };
 };
 
-const getPaySign = ({ account, discount, total }) => {
-  return CryptoJS.MD5(account + discount + total + salt).toString();
-};
-
-const checkPaySign = ({ account, discount, total, sign }) => {
-  return getPaySign({ account, discount, total }) === sign;
-};
+const checkPaySign = ({ account, discount, total, sign }) => getPaySign({ account, discount, total }) === sign;
 
 /**
  * 对接app的回调接口
@@ -73,27 +74,26 @@ app.get("/pay-hook", (req, res) => {
     const { pay_type: payType, msg_time: payTime, text, app_name } = data;
     const money = text.match(/收款(\d{1,}.\d{1,})元/)[1];
     if (["wxpay", "alipay"].includes(payType)) {
-      const { returnUrl = ReturnUrl, ...rest } = client.query;
-      const callbackData = {
-        ...rest,
-        returnUrl,
-        payType,
-        payTime,
-      };
-
-      // 回调通知
-      if (NotifyUrl) {
-        axios.post(NotifyUrl, callbackData);
-      }
-
-      // 通知客户端
-      const client = [...sseClients].find((o) => {
+      const client = getClients().find((o) => {
         const { total, discount } = o.query;
         return Number(money) === Number(total) - Number(discount);
       });
+      // 支付的网页客户端可不能关闭啊
       if (client) {
-        const text = JSON.stringify(callbackData);
-        client.write("data: " + text + "\n\n");
+        const { returnUrl = ReturnUrl, ...rest } = client.query;
+        const callbackData = {
+          ...rest,
+          returnUrl,
+          payType,
+          payTime,
+        };
+        // 回调通知
+        if (NotifyUrl) {
+          axios.post(NotifyUrl, callbackData);
+        }
+        // 通知客户端
+        const responseText = JSON.stringify(callbackData);
+        client.write(`data: ${responseText}\n\n`);
       }
     }
   } catch (error) {
@@ -149,10 +149,9 @@ app.get("/in-pay", (req, res) => {
   }
   // 防止有重复金额的客户端连接
   if (
-    [...sseClients].find(
-      (o) =>
-        Number(o.query.total) - Number(o.query.discount) ===
-        Number(req.query.total) - Number(req.query.discount)
+    getClients().find(
+      o => Number(o.query.total) - Number(o.query.discount)
+        === Number(req.query.total) - Number(req.query.discount)
     )
   ) {
     res.json({
@@ -169,7 +168,7 @@ app.get("/in-pay", (req, res) => {
   // 将连接参数存储下来
   res.query = req.query;
   // 添加新的连接
-  sseClients.add(res);
+  clientSet.add(res);
 });
 
 app.listen(port, () => {
