@@ -48,16 +48,37 @@ setInterval(() => {
 // 获取当前用户的折扣信息
 const getPayInfo = ({ account, total }) => {
   let discount = 0;
-  while (
-    getClients().find(
-      o => Number(o.query.total) - Number(o.query.discount)
-        === Number(total) - Number(discount)
-    )
-  ) {
-    discount += DiscountUnit;
+  const historyRealPay = getClients().map(o => (Number(o.query.total) - Number(o.query.discount)).toFixed(2));
+
+  if (!RandomDiscountMode) {
+    // 顺序折扣模式
+    while (
+      historyRealPay.find(
+        o => o === (Number(total) - Number(discount)).toFixed(2)
+      )
+    ) {
+      discount = (discount + DiscountUnit).toFixed(2);
+    }
+  } else {
+    // 随机折扣模式
+    const priceCount = ((MaxDiscount / DiscountUnit) | 0) + 1;
+    const availablePrices = Array(priceCount)
+      .map((o, idx) => (total - idx * DiscountUnit).toFixed(2))
+      .filter(o => historyRealPay.includes(o));
+    if (availablePrices.length > 0) {
+      const idx = (Math.random() * availablePrices.length) | 0;
+      discount = (total - availablePrices[idx]).toFixed(2);
+    } else {
+      discount === total;
+    }
   }
+
   // 折扣后金额不能为0
-  if (Number(total) === Number(discount)) {
+  if (total === discount) {
+    return null;
+  }
+  // 折扣金额不能大于折扣上限
+  if (discount > MaxDiscount) {
     return null;
   }
   return {

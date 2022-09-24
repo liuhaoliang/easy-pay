@@ -41,5 +41,6 @@ module.exports = {
     "no-return-assign": 0,
     "no-restricted-globals": 0,
     "no-loop-func": 0,
+    "no-bitwise": 0,
   },
 };
