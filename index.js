@@ -1,6 +1,12 @@
 const path = require("path");
 const express = require("express");
 const CryptoJS = require("crypto-js");
+const { default: axios } = require("axios");
+
+// 支付通知地址
+const NotifyUrl = "";
+// 支付返回地址，如果预支付没有传，就使用这个默认地址
+const ReturnUrl = "";
 
 // 存储客户端连接
 const sseClients = new Set();
@@ -61,22 +67,30 @@ const checkPaySign = ({ account, discount, total, sign }) => {
 /**
  * 对接app的回调接口
  */
-app.get("/pay", (req, res) => {
+app.get("/pay-hook", (req, res) => {
   try {
     const data = JSON.parse(req.query.extra.replace(/\\/g, ""));
-    const { pay_type, msg_time, text, app_name } = data;
+    const { pay_type: payType, msg_time: payTime, text, app_name } = data;
     const money = text.match(/收款(\d{1,}.\d{1,})元/)[1];
-    if (["wxpay", "alipay"].includes(pay_type)) {
+    if (["wxpay", "alipay"].includes(payType)) {
+      const callbackData = {
+        ...client.query,
+        payType,
+        payTime,
+      };
+
+      // 回调通知
+      if (NotifyUrl) {
+        axios.post(NotifyUrl, callbackData);
+      }
+
+      // 通知客户端
       const client = [...sseClients].find((o) => {
         const { total, discount } = o.query;
         return Number(money) === Number(total) - Number(discount);
       });
       if (client) {
-        const text = JSON.stringify({
-          ...client.query,
-          pay_type,
-          pay_time: msg_time,
-        });
+        const text = JSON.stringify(callbackData);
         client.write("data: " + text + "\n\n");
       }
     }
