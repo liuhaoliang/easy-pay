@@ -25,9 +25,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
 
+// 获取客户端
 const getClients = () => [...clientSet];
 
+// 获取支付签名参数
 const getPaySign = ({ account, discount, total }) => CryptoJS.MD5(account + discount + total + Salt).toString();
+
+// 检查签名是否正确
+const checkPaySign = ({ account, discount, total, sign }) => getPaySign({ account, discount, total }) === sign;
 
 // 定时删除无效客户端
 setInterval(() => {
@@ -62,8 +67,6 @@ const getPayInfo = ({ account, total }) => {
     sign: getPaySign({ account, total, discount }),
   };
 };
-
-const checkPaySign = ({ account, discount, total, sign }) => getPaySign({ account, discount, total }) === sign;
 
 /**
  * 对接app的回调接口

@@ -20,8 +20,8 @@ module.exports = {
     "error"或者2，出现问题会报错
   */
   rules: {
-    "no-console": 0, //手动添加
-    eqeqeq: 0, //手动添加
+    "no-console": 0,
+    eqeqeq: 0,
     camelcase: 0,
     "no-unused-vars": 0,
     "no-unused-expressions": 0,
@@ -40,6 +40,6 @@ module.exports = {
     "array-callback-return": 0,
     "no-return-assign": 0,
     "no-restricted-globals": 0,
-    "no-loop-func": 0
+    "no-loop-func": 0,
   },
 };
