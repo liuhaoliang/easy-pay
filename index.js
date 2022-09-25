@@ -4,7 +4,7 @@ const CryptoJS = require("crypto-js");
 const { default: axios } = require("axios");
 
 // 程序端口
-const port = 3030;
+const Port = 3030;
 
 // 支付通知地址
 const NotifyUrl = "";
@@ -199,6 +199,6 @@ app.get("/in-pay", (req, res) => {
   res.write(`data: ${responseText}\n\n`);
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+app.listen(Port, () => {
+  console.log(`Example app listening on port ${Port}`);
 });
