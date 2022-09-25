@@ -62,7 +62,8 @@ const getPayInfo = ({ account, total }) => {
   } else {
     // 随机折扣模式
     const priceCount = ((MaxDiscount / DiscountUnit) | 0) + 1;
-    const availablePrices = Array(priceCount).fill("")
+    const availablePrices = Array(priceCount)
+      .fill("")
       .map((o, idx) => (total - idx * DiscountUnit).toFixed(2))
       .filter(o => !historyRealPay.includes(o));
     if (availablePrices.length > 0) {
@@ -130,7 +131,7 @@ app.get("/pay-hook", (req, res) => {
  * 预支付，根据用户和金额，判断需要折扣的金额
  */
 app.post("/prepare-pay", (req, res) => {
-  const { account, total } = req.body;
+  const { account, total, ...rest } = req.body;
   if (!account || !total) {
     res.json({
       status: false,
@@ -155,7 +156,7 @@ app.post("/prepare-pay", (req, res) => {
   }
   res.json({
     status: true,
-    data: payInfo,
+    data: { ...payInfo, ...rest },
   });
 });
 
