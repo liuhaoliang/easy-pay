@@ -20,12 +20,10 @@ npm run start
 ```
 
 ### 前台支付页面地址 [http://localhost:3030](http://ip:3030)
-### 支付回调地址 http://localhost:3030/pay
-
 
 ## App端配置：
 - 下载 [双卡助手App](https://smshelper.wisg.cn)，打开功能面板
 - 在要转发的内容，勾选收款信息
 - 在转发方式，勾选网络转发，并点击后边的设置
 - 配置转发通道，选择自定义和Get
-- 填写支付回调地址，http://[你的服务ip]:3030/pay?extra={{extra}}并点击添加
+- 填写支付回调地址，http://[你的服务ip]:3030/pay-hook?extra={{extra}}并点击添加
