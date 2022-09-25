@@ -36,6 +36,8 @@
     <script>
       // 设置显示的实际支付金额
       const search = new URLSearchParams(location.search);
+      let _returnUrl = search.get("returnUrl") || "";
+
       const realPay =
         Number(search.get("total")) - Number(search.get("discount"));
       document.getElementById("real-pay").innerText = realPay;
@@ -48,19 +50,32 @@
       const es = new EventSource(`/in-pay${location.search}`);
       es.onmessage = function (event) {
         try {
-          const { payType, payTime, total, discount, account, returnUrl } =
-            JSON.parse(event.data);
-          alert(
-            `付款用户：${account}\n付款时间：${payTime}\n付款方式：${payType}\n付款金额：${total}\n实收金额：${
-              Number(total) - Number(discount)
-            }`
-          );
-          location.href = returnUrl || "/";
+          const {
+            payType,
+            payTime,
+            total,
+            discount,
+            account,
+            returnUrl,
+            extra,
+            type,
+          } = JSON.parse(event.data);
+          // 优先使用动态returnUrl，其次使用服务端配置的参数
+          _returnUrl = _returnUrl || returnUrl || "https://wisg.cn";
+          if (type === "config") {
+          } else if (type === "success") {
+            const realPay = (Number(total) - Number(discount)).toFixed(2);
+            es.close();
+            alert(
+              `付款用户：${account}\n付款时间：${payTime}\n付款方式：${payType}\n付款金额：${total}\n实收金额：${realPay}\n附加信息：${extra}\n回退地址：${returnUrl}`
+            );
+            location.href = _returnUrl;
+          }
         } catch (error) {}
       };
       es.onerror = function (error) {
         es.close();
-        location.href = "/";
+        location.href = _returnUrl;
       };
 
       const timer = setInterval(() => {
@@ -72,7 +87,7 @@
           // 延时1s保证优先断开连接;
           setTimeout(() => {
             alert("支付超时");
-            location.href = "/";
+            location.href = _returnUrl;
           }, 1000);
         }
       }, 1000);

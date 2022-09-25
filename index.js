@@ -111,6 +111,7 @@ app.get("/pay-hook", (req, res) => {
           returnUrl,
           payType,
           payTime,
+          type: "success",
         };
         // 回调通知
         if (NotifyUrl) {
@@ -194,6 +195,8 @@ app.get("/in-pay", (req, res) => {
   res.query = req.query;
   // 添加新的连接
   clientSet.add(res);
+  const responseText = JSON.stringify({ type: "config", returnUrl: ReturnUrl });
+  res.write(`data: ${responseText}\n\n`);
 });
 
 app.listen(port, () => {
